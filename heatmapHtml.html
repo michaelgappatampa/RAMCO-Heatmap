@@ -1,0 +1,115 @@
+<html><head>
+    <title>HeatMap</title>  
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+     <link rel="stylesheet" href="https://greatertampauat.ramcotest.com//WebResources/ramcosub_heatmapCss">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"> 
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heatmapjs@2.0.2/heatmap.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ajax/2.1.0/leaflet.ajax.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ajax/2.1.0/leaflet.ajax.min.js"></script>
+
+    <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="./style.css">
+    <style>
+        /* #map { width: 1582px; height: 705px; } */
+        body { font: 16px/1.4 "Helvetica Neue", Arial, sans-serif; }
+        .ghbtns { position: relative; top: 4px; margin-left: 5px; }
+        a { color: #0077ff; }
+    </style>
+<meta><meta><meta></head>
+<body style="overflow-wrap: break-word;">
+        <!-- <div id='loadButton'><input id="fileInput" type="file"/></div> -->
+
+<div id="map">  </div>
+
+<!-- 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heatmapjs@2.0.2/heatmap.js"></script> -->
+<script src="http://leaflet.github.io/Leaflet.markercluster/example/realworld.10000.js"></script>
+
+<script>
+    // var map = L.map('map').setView([28.7041, 77.1025], 5);
+    var leaflet_tiles   = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {id: 'MapID', attribution: '<a href="http://osm.org/copyright">OpenStreetMap</a>'}), 
+    CartoDB_DarkMatter = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {id: 'MapID', attribution:'<a href="https://carto.com/attributions">CARTO</a>'});
+    
+    var map = L.map('map', {
+        center: [9.0820, 8.6753],
+        zoom: 3,
+        layers: [leaflet_tiles,CartoDB_DarkMatter]
+    }).setView([27.9517, -82.4588], 10);
+    var baseMaps = {
+        "CartoDB_DarkMatter": CartoDB_DarkMatter,
+        "Leaflet_Tiles": leaflet_tiles
+    };
+    L.control.layers(baseMaps).addTo(map);
+    addContacts();
+    addAccounts()
+    function addContacts(){
+        // this is where we will need to pull the data from RAMCO and create a list of coordinates. 
+        var listOfContactCoordinates = []
+        var req = new XMLHttpRequest();
+        req.open("GET", window.parent.Xrm.Page.context.getClientUrl() + "/api/data/v8.2/contacts?$select=address1_latitude,address1_longitude&$filter=address1_longitude ne null and  address1_latitude ne null", true);
+        req.setRequestHeader("OData-MaxVersion", "4.0");
+        req.setRequestHeader("OData-Version", "4.0");
+        req.setRequestHeader("Accept", "application/json");
+        req.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+        req.setRequestHeader("Prefer", "odata.include-annotations=\"*\"");
+        req.onreadystatechange = function () {
+            if (this.readyState === 4) {
+                req.onreadystatechange = null;
+                if (this.status === 200) {
+                    var results = JSON.parse(this.response);
+                    for (var i = 0; i < results.value.length; i++) {
+                        var address1_latitude = results.value[i]["address1_latitude"];
+                        var address1_longitude = results.value[i]["address1_longitude"];
+                        var heatMap = new L.circle([address1_latitude, address1_longitude],{color: 'red',
+                            fillColor: '#f03',
+                            fillOpacity: 0.5,
+                            radius: 50}).addTo(map);
+                    }
+                    
+                } else {
+                    Xrm.Utility.alertDialog(this.statusText);
+                }
+            }
+        };
+        req.send();
+    }
+    function addAccounts(){
+        var req = new XMLHttpRequest();
+        req.open("GET", window.parent.Xrm.Page.context.getClientUrl() + "/api/data/v8.2/accounts?$select=address1_longitude,address1_latitude&$filter=address1_latitude ne null and  address1_longitude ne null", true);
+        req.setRequestHeader("OData-MaxVersion", "4.0");
+        req.setRequestHeader("OData-Version", "4.0");
+        req.setRequestHeader("Accept", "application/json");
+        req.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+        req.setRequestHeader("Prefer", "odata.include-annotations=\"*\"");
+        req.onreadystatechange = function () {
+            if (this.readyState === 4) {
+                req.onreadystatechange = null;
+                if (this.status === 200) {
+                    var results = JSON.parse(this.response);
+                    for (var i = 0; i < results.value.length; i++) {
+                        var address1_longitude = results.value[i]["address1_longitude"];
+                        var address1_latitude = results.value[i]["address1_latitude"];
+                        var heatMap = new L.circle([address1_latitude, address1_longitude],{color: 'blue',
+                            fillColor: 'blue',
+                            fillOpacity: 0.5,
+                            radius: 50}).addTo(map);
+                    }
+                } else {
+                    Xrm.Utility.alertDialog(this.statusText);
+                }
+            }
+        };
+        req.send();
+    }
+    
+</script>
+</body></html>
